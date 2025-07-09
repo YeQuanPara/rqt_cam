@@ -67,24 +67,36 @@ namespace ecam_v4l2
         std::string productName;
         device_node+= dev_node;
         if(check_camera_type(device_node,&productName,&type)!=FAILURE){
-          if(type==USB){
-            pdev = udev_device_get_parent_with_subsystem_devtype(dev,
-                                                                "usb",
-                                                                "usb_device");
-            std::string serialno = udev_device_get_sysattr_value(pdev,"serial");
-            /* To add '_' between camera name and serial no,
-               ex: "See3CAM_130_1523C405"*/
-            productName+="_";
-            productName+=serialno;
-            /*Replacing ('-',',',' ') with underscore,
-            Since those characters cannot be used in topic name.*/
-            prepare_topic(&productName);
-            camera_name.push_back(productName);
-          }else {
-            /*Replacing ('-',',',' ') with underscore,
-            Since those characters cannot be used in topic name.*/
-            prepare_topic(&productName);
-            camera_name.push_back(productName);
+            if (type == USB) {
+              pdev = udev_device_get_parent_with_subsystem_devtype(
+                  dev,
+                  "usb",
+                  "usb_device");
+          
+              if (!pdev) {
+                  ROS_WARN_STREAM("Failed to find USB parent device for " << device_node);
+                  udev_device_unref(dev);
+                  continue;
+              }
+          
+              const char *serial_cstr = udev_device_get_sysattr_value(pdev, "serial");
+              std::string serialno = serial_cstr ? serial_cstr : "";
+          
+              ROS_WARN_STREAM("get_product_name serial: " << serialno);
+          
+              /* To add '_' between camera name and serial no,
+                ex: "See3CAM_130_1523C405"*/
+              productName += "_";
+              productName += serialno;
+              /* Replacing ('-',',',' ') with underscore,
+                Since those characters cannot be used in topic name. */
+              prepare_topic(&productName);
+              camera_name.push_back(productName);
+          } else {
+              /* Replacing ('-',',',' ') with underscore,
+                Since those characters cannot be used in topic name. */
+              prepare_topic(&productName);
+              camera_name.push_back(productName);
           }
         }
       }
